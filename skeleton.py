@@ -12,7 +12,17 @@ def lhs(fmla):
 
 # Return the connective symbol of a binary connective formula
 def con(fmla):
-    return ''
+    if fmla[0] == '(':
+        depth = 0
+        for x in range(1, len(fmla)-1, 1):
+            if fmla[x] == '(':
+                depth += 1
+            elif fmla[x] == ')':
+                depth -= 1
+            elif depth == 1 and fmla[x:x+2] in ['/\\', '\/', '=>']:
+                return fmla[x:x+2]
+    else:
+        return ''
 
 # Return the RHS symbol of a binary connective formula
 def rhs(fmla):
