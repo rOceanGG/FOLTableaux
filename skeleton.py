@@ -14,7 +14,7 @@ def lhs(fmla):
 def con(fmla):
     if fmla[0] == '(':
         depth = 0
-        for x in range(1, len(fmla)-1, 1):
+        for x in range(len(fmla)-1):
             if fmla[x] == '(':
                 depth += 1
             elif fmla[x] == ')':
