@@ -22,15 +22,18 @@ def breakToParts(fmla):
 
 # Return the LHS of a binary connective formula
 def lhs(fmla):
-    return breakToParts(fmla)[0]
+    parts = breakToParts(fmla)
+    return parts[0]
 
 # Return the connective symbol of a binary connective formula
 def con(fmla):
-    return breakToParts[1]
+    parts = breakToParts(fmla)
+    return parts[1]
 
 # Return the RHS symbol of a binary connective formula
 def rhs(fmla):
-    breakToParts[2]
+    parts = breakToParts(fmla)
+    return parts[2]
 
 
 # You may choose to represent a theory as a set or a list
