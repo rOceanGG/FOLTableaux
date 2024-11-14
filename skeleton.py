@@ -6,12 +6,8 @@ MAX_CONSTANTS = 10
 def parse(fmla):
     return 0
 
-# Return the LHS of a binary connective formula
-def lhs(fmla):
-    return ''
-
-# Return the connective symbol of a binary connective formula
-def con(fmla):
+# Break the formula into LHS, Binary Connective, and RHS
+def breakToParts(fmla):
     if fmla[0] == '(':
         depth = 0
         for x in range(len(fmla)-1):
@@ -20,13 +16,21 @@ def con(fmla):
             elif fmla[x] == ')':
                 depth -= 1
             elif depth == 1 and fmla[x:x+2] in ['/\\', '\/', '=>']:
-                return fmla[x:x+2]
+                return [fmla[1:x], fmla[x:x+2], fmla[x+2:len(fmla) -1]]
     else:
-        return ''
+        return ['','','']
+
+# Return the LHS of a binary connective formula
+def lhs(fmla):
+    return breakToParts(fmla)[0]
+
+# Return the connective symbol of a binary connective formula
+def con(fmla):
+    return breakToParts[1]
 
 # Return the RHS symbol of a binary connective formula
 def rhs(fmla):
-    return ''
+    breakToParts[2]
 
 
 # You may choose to represent a theory as a set or a list
