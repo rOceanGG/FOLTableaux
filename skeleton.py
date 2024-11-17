@@ -1,24 +1,22 @@
 MAX_CONSTANTS = 10
 
-
-
-# Parse a formula, consult parseOutputs for return values.
-def parse(fmla):
-    return 0
-
 # Break the formula into LHS, Binary Connective, and RHS
 def breakToParts(fmla):
-    if fmla[0] == '(':
-        depth = 0
-        for x in range(len(fmla)-1):
-            if fmla[x] == '(':
-                depth += 1
-            elif fmla[x] == ')':
-                depth -= 1
-            elif depth == 1 and fmla[x:x+2] in ['/\\', '\/', '=>']:
-                return [fmla[1:x], fmla[x:x+2], fmla[x+2:len(fmla) -1]]
-    else:
-        return ['','','']
+    try:
+        if fmla[0] == '(':
+            depth = 0
+            for x in range(len(fmla)-1):
+                if fmla[x] == '(':
+                    depth += 1
+                elif fmla[x] == ')':
+                    depth -= 1
+                elif depth == 1 and fmla[x:x+2] in ['/\\', '\\/', '=>']:
+                    return [fmla[1:x], fmla[x:x+2], fmla[x+2:len(fmla) -1]]
+        else:
+            return ['','','']
+    except:
+        return ['', '', '']
+    return ['', '', '']
 
 # Return the LHS of a binary connective formula
 def lhs(fmla):
@@ -34,6 +32,72 @@ def con(fmla):
 def rhs(fmla):
     parts = breakToParts(fmla)
     return parts[2]
+
+
+# Parse a formula, consult parseOutputs for return values.
+def parse(fmla):
+
+    # The following three functions are used to detect Propositional Formulae
+    def isProposition(formula):
+        return formula in ['p', 'q', 'r', 's']
+
+    def isSymbol(formula):
+        return formula in ['/\\', '\\/', '=>'] 
+    
+    def isPropositionalFormula(formula):
+        if isProposition(formula):
+            return 6
+        elif len(formula) > 1 and formula[0] == '~' and isPropositionalFormula(formula[1:]) != 0:
+            return 7
+        else:
+            parts = breakToParts(formula)
+            if parts == ['','','']:
+                return 0
+            else:
+                if isPropositionalFormula(parts[0]) != 0 and isSymbol(parts[1]) and isPropositionalFormula(parts[2]) != 0:
+                    return 8
+                else:
+                    return 0
+
+    def isVariable(formula):
+        return formula in ['x','y','z','w']
+    
+    def isPredicate(formula):
+        return formula in ['P','Q','R','S']
+    
+    def isQuantifier(formula):
+        return formula in ['A', 'E']
+    
+    #Note that isSymbol() function is the same because there are no new binary connectives
+
+    def isFOLFormula(formula):
+        if (len(formula) == 6 and isPredicate(formula[0]) and 
+        formula[1] == '(' and isVariable(formula[2]) and formula[3] == ','
+        and isVariable(formula[4]) and formula[5] == ')'):
+            return 1
+        elif len(formula) > 2 and formula[0] == '~' and isFOLFormula(formula[1:]) != 0:
+            return 2
+        elif len(formula) > 3 and isQuantifier(formula[0]) and isVariable(formula[1]) and isFOLFormula(formula[2:]) != 0:
+            return 3 if formula[0] == 'A' else 4
+        else:
+            parts = breakToParts(formula)
+            if parts == ['','','']:
+                return 0
+            else:
+                if isFOLFormula(parts[0]) != 0 and isSymbol(parts[1]) and isFOLFormula(parts[2]) != 0:
+                    return 5
+                else:
+                    return 0
+
+    # If either quantifier is present, then start checking for FOL
+    if 'A' in fmla or 'E' in fmla or 'P' in fmla or 'Q' in fmla or 'R' in fmla or 'S' in fmla:
+        return isFOLFormula(fmla)
+        
+    # Otherwise check for Propositional Logic
+    else:
+        return isPropositionalFormula(fmla)
+        
+
 
 
 # You may choose to represent a theory as a set or a list

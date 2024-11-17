@@ -1,32 +1,14 @@
-#Testing for con()
-def breakToParts(fmla):
-    if fmla[0] == '(':
-        depth = 0
-        for x in range(len(fmla)-1):
-            if fmla[x] == '(':
-                depth += 1
-            elif fmla[x] == ')':
-                depth -= 1
-            elif depth == 1 and fmla[x:x+2] in ['/\\', '\/', '=>']:
-                return [fmla[1:x], fmla[x:x+2], fmla[x+2:len(fmla) -1]]
-    else:
-        return ['','','']
+from skeleton import breakToParts, con, lhs, rhs, parse
 
-# Return the LHS of a binary connective formula
-def lhs(fmla):
-    parts = breakToParts(fmla)
-    return parts[0]
-
-# Return the connective symbol of a binary connective formula
-def con(fmla):
-    parts = breakToParts(fmla)
-    return parts[1]
-
-# Return the RHS symbol of a binary connective formula
-def rhs(fmla):
-    parts = breakToParts(fmla)
-    return parts[2]
-
+parseOutputs = ['not a formula',
+                'an atom',
+                'a negation of a first order logic formula',
+                'a universally quantified formula',
+                'an existentially quantified formula',
+                'a binary connective first order formula',
+                'a proposition',
+                'a negation of a propositional formula',
+                'a binary connective propositional formula']
 
 #Formulas
 fmla1 = '~(p=>(q=>p))'
@@ -74,3 +56,10 @@ print("Test 2 -- Formula: " + fmla2 + ", Expected: q" +  ", Actual: " + str(rhs(
 print("Test 3 -- Formula: " + fmla3 + ", Expected: (q/\\~q)" +  ", Actual: " + str(rhs(fmla3)))
 print("Test 4 -- Formula: " + fmla4 + ", Expected: p" +  ", Actual: " + str(rhs(fmla4)))
 print("Test 5 -- Formula: " + fmla6 + ", Expected: " +  ", Actual: " + str(rhs(fmla6)))
+
+print("\nTesting for parse()")
+print("Test 1 -- Formula: " + fmla1 + ", Expected: a negation of a propositional formula" +  ", Actual: " + parseOutputs[parse(fmla1)])
+print("Test 2 -- Formula: " + fmla2 + ", Expected: a binary connective propositional formula" +  ", Actual: " + parseOutputs[parse(fmla2)])
+print("Test 3 -- Formula: " + fmla16 + ", Expected: an existentially quantified formula" +  ", Actual: " + parseOutputs[parse(fmla16)])
+print("Test 4 -- Formula: " + fmla22 + ", Expected: a binary connective first order formula" +  ", Actual: " + parseOutputs[parse(fmla22)])
+print("Test 5 -- Formula: " + fmla15 + ", Expected: a negation of a first order logic formula" +  ", Actual: " + parseOutputs[parse(fmla15)])
