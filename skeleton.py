@@ -1,4 +1,10 @@
 MAX_CONSTANTS = 10
+NOT = '~'
+AND = '/\\'
+OR = '\\/'
+IMPLIES = '=>'
+CONNECTIVES = [AND, OR, IMPLIES]
+
 
 # Break the formula into LHS, Binary Connective, and RHS
 def breakToParts(fmla):
@@ -10,7 +16,7 @@ def breakToParts(fmla):
                     depth += 1
                 elif fmla[x] == ')':
                     depth -= 1
-                elif depth == 1 and fmla[x:x+2] in ['/\\', '\\/', '=>']:
+                elif depth == 1 and fmla[x:x+2] in CONNECTIVES:
                     return [fmla[1:x], fmla[x:x+2], fmla[x+2:len(fmla) -1]]
         else:
             return ['','','']
@@ -42,22 +48,22 @@ def parse(fmla):
         return formula in ['p', 'q', 'r', 's']
 
     def isSymbol(formula):
-        return formula in ['/\\', '\\/', '=>'] 
+        return formula in CONNECTIVES
     
     def isPropositionalFormula(formula):
         if isProposition(formula):
-            return 6
-        elif len(formula) > 1 and formula[0] == '~' and isPropositionalFormula(formula[1:]) != 0:
-            return 7
+            return 6 # a proposition
+        elif len(formula) > 1 and formula[0] == NOT and isPropositionalFormula(formula[1:]) != 0:
+            return 7 # a negation of a propositional formula
         else:
             parts = breakToParts(formula)
             if parts == ['','','']:
-                return 0
+                return 0 # not a formula
             else:
                 if isPropositionalFormula(parts[0]) != 0 and isSymbol(parts[1]) and isPropositionalFormula(parts[2]) != 0:
-                    return 8
-                else:
-                    return 0
+                    return 8 # a binary connective propositional formula
+                else: 
+                    return 0 # not a formula
 
     def isVariable(formula):
         return formula in ['x','y','z','w']
@@ -74,11 +80,12 @@ def parse(fmla):
         if (len(formula) == 6 and isPredicate(formula[0]) and 
         formula[1] == '(' and isVariable(formula[2]) and formula[3] == ','
         and isVariable(formula[4]) and formula[5] == ')'):
-            return 1
-        elif len(formula) > 2 and formula[0] == '~' and isFOLFormula(formula[1:]) != 0:
-            return 2
+            return 1 # an atom
+        elif len(formula) > 2 and formula[0] == NOT and isFOLFormula(formula[1:]) != 0:
+            return 2 # a negation of a first order logic formula
         elif len(formula) > 3 and isQuantifier(formula[0]) and isVariable(formula[1]) and isFOLFormula(formula[2:]) != 0:
             return 3 if formula[0] == 'A' else 4
+        # a universally quantified first order logic formula, an existentially quantified first order logic formula
         else:
             parts = breakToParts(formula)
             if parts == ['','','']:
@@ -102,6 +109,8 @@ def parse(fmla):
 
 # You may choose to represent a theory as a set or a list
 def theory(fmla):#initialise a theory with a single formula in it
+    queue = [fmla]
+
     return None
 
 #check for satisfiability
