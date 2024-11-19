@@ -9,8 +9,8 @@ PROPOSITIONAL_INDICES = [6,7,8]
 
 class TreeNode():
     def __init__(self, stmt, children, values):
-        self.children = children
         self.stmt = stmt
+        self.children = children
         self.values = values
 
     def addChildrenToLeaf(self, newChildren):
@@ -141,9 +141,8 @@ def theory(fmla):#initialise a theory with a single formula in it
             fmlaType = parse(curNode.stmt)
 
             if fmlaType == 6 or (fmlaType == 7 and len(curNode.stmt) == 2):
-                if curNode.children:
-                    curNode.addProp(curNode.stmt)
-                else:
+                curNode.addProp(curNode.stmt)
+                if not curNode.children:
                     leafProps.append(curNode.values)
 
             elif fmlaType == 8:
@@ -151,8 +150,8 @@ def theory(fmla):#initialise a theory with a single formula in it
                 leftSideNode = TreeNode(left, [], curNode.values)
                 rightSideNode = TreeNode(right, [], curNode.values)
                 if sym == AND: 
-                    curNode.addChildrenToLeaf(leftSideNode)
-                    curNode.addChildrenToLeaf(rightSideNode)
+                    curNode.addChildrenToLeaf([leftSideNode])
+                    curNode.addChildrenToLeaf([rightSideNode])
                 elif sym == OR:
                     curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
                 elif sym == IMPLIES:
@@ -170,16 +169,17 @@ def theory(fmla):#initialise a theory with a single formula in it
                     if negatedSym == OR:
                         leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
                         rightSideNode = TreeNode('~' + negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf(leftSideNode)
-                        curNode.addChildrenToLeaf(rightSideNode)
+                        curNode.addChildrenToLeaf([leftSideNode])
+                        curNode.addChildrenToLeaf([rightSideNode])
                     elif negatedSym == AND:
                         leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
                         rightSideNode = TreeNode('~' + negatedRight, [], curNode.values)
                         curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
                     elif negatedSym == IMPLIES:
-                        leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
-                        rightSideNode = TreeNode(negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                        leftSideNode = TreeNode(negatedLeft, [], curNode.values)
+                        rightSideNode = TreeNode('~'+negatedRight, [], curNode.values)
+                        curNode.addChildrenToLeaf([leftSideNode])
+                        curNode.addChildrenToLeaf([rightSideNode])
                     
                     queue.append(leftSideNode)
                     queue.append(rightSideNode)
@@ -190,7 +190,20 @@ def theory(fmla):#initialise a theory with a single formula in it
 
 #check for satisfiability
 def sat(tableau):
+
+    def containsContradiction(arr):
+        for prop in arr:
+            if '~' + prop in arr:
+                return True
+        
+        return False
 #output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
+    pathways = theory(tableau)
+
+    for path in pathways:
+        if not containsContradiction(path):
+            return 1
+    
     return 0
 
 #------------------------------------------------------------------------------------------------------------------------------:
