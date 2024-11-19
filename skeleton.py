@@ -4,6 +4,21 @@ AND = '/\\'
 OR = '\\/'
 IMPLIES = '=>'
 CONNECTIVES = [AND, OR, IMPLIES]
+FOL_INDICES = [1,2,3,4,5]
+PROPOSITIONAL_INDICES = [6,7,8]
+
+class TreeNode():
+    def __init__(self, stmt, children, truthValues):
+        self.children = children
+        self.stmt = stmt
+        self.props = {}
+
+    def addLeafChild(self, child):
+        if len(self.children) == 0:
+            self.children = [child]
+        else:
+            for c in self.children:
+                c.addLeafChild(child)
 
 
 # Break the formula into LHS, Binary Connective, and RHS
@@ -109,9 +124,15 @@ def parse(fmla):
 
 # You may choose to represent a theory as a set or a list
 def theory(fmla):#initialise a theory with a single formula in it
-    queue = [fmla]
+    def deConstructPropositionalFormula(root):
+        
 
-    return None
+
+    tabTree = TreeNode(fmla, [], [])
+    fmlaType = parse(fmla)
+    if fmlaType in PROPOSITIONAL_INDICES:
+        return deconstructPropositionalFormula(tabree)
+    
 
 #check for satisfiability
 def sat(tableau):
