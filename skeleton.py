@@ -8,17 +8,22 @@ FOL_INDICES = [1,2,3,4,5]
 PROPOSITIONAL_INDICES = [6,7,8]
 
 class TreeNode():
-    def __init__(self, stmt, children, truthValues):
+    def __init__(self, stmt, children, values):
         self.children = children
         self.stmt = stmt
-        self.props = {}
+        self.values = values
 
-    def addLeafChild(self, child):
+    def addChildrenToLeaf(self, newChildren):
         if len(self.children) == 0:
-            self.children = [child]
+            self.children = newChildren
         else:
             for c in self.children:
-                c.addLeafChild(child)
+                c.addChildrenToLeaf(newChildren)
+    
+    def addProp(self, prop):
+        self.values.add(prop)
+        for c in self.children:
+            c.addProp(prop)
 
 
 # Break the formula into LHS, Binary Connective, and RHS
@@ -124,14 +129,63 @@ def parse(fmla):
 
 # You may choose to represent a theory as a set or a list
 def theory(fmla):#initialise a theory with a single formula in it
-    def deConstructPropositionalFormula(root):
+    FOLPROP = parse(fmla)
+    if FOLPROP == 0: return []
+    tabRoot = TreeNode(fmla, [], set([]))
+    leafProps = []
+    queue = [tabRoot]
+
+    if FOLPROP > 5:
+        while queue:
+            curNode = queue.pop(0)
+            fmlaType = parse(curNode.stmt)
+
+            if fmlaType == 6 or (fmlaType == 7 and len(curNode.stmt) == 2):
+                if curNode.children:
+                    curNode.addProp(curNode.stmt)
+                else:
+                    leafProps.append(curNode.values)
+
+            elif fmlaType == 8:
+                left,sym,right = breakToParts(curNode.stmt)
+                leftSideNode = TreeNode(left, [], curNode.values)
+                rightSideNode = TreeNode(right, [], curNode.values)
+                if sym == AND: 
+                    curNode.addChildrenToLeaf(leftSideNode)
+                    curNode.addChildrenToLeaf(rightSideNode)
+                elif sym == OR:
+                    curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                elif sym == IMPLIES:
+                    curNode.addChildrenToLeaf([TreeNode('~' + left, [], curNode.values), rightSideNode])
+                
+                queue.append(leftSideNode)
+                queue.append(rightSideNode)
+            else:
+                if curNode.stmt[:2] == '~~':
+                    while curNode.stmt[:2] == '~~':
+                        curNode.stmt = curNode.stmt[2:]
+                    queue.insert(0, TreeNode(curNode.stmt, curNode.children, curNode.values))
+                else:
+                    negatedLeft, negatedSym, negatedRight = breakToParts(curNode.stmt[1:])
+                    if negatedSym == OR:
+                        leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
+                        rightSideNode = TreeNode('~' + negatedRight, [], curNode.values)
+                        curNode.addChildrenToLeaf(leftSideNode)
+                        curNode.addChildrenToLeaf(rightSideNode)
+                    elif negatedSym == AND:
+                        leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
+                        rightSideNode = TreeNode('~' + negatedRight, [], curNode.values)
+                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    elif negatedSym == IMPLIES:
+                        leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
+                        rightSideNode = TreeNode(negatedRight, [], curNode.values)
+                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    
+                    queue.append(leftSideNode)
+                    queue.append(rightSideNode)
+                         
+    return leafProps
         
-
-
-    tabTree = TreeNode(fmla, [], [])
-    fmlaType = parse(fmla)
-    if fmlaType in PROPOSITIONAL_INDICES:
-        return deconstructPropositionalFormula(tabree)
     
 
 #check for satisfiability
