@@ -193,7 +193,7 @@ def sat(tableau):
 
     def containsContradiction(arr):
         for prop in arr:
-            if '~' + prop in arr:
+            if '~' + prop in arr or (len(prop) == 2 and prop[1] in arr):
                 return True
         
         return False
@@ -205,6 +205,8 @@ def sat(tableau):
             return 1
     
     return 0
+
+sat("~(p=>(q=>p))")
 
 #------------------------------------------------------------------------------------------------------------------------------:
 #                   DO NOT MODIFY THE CODE BELOW. MODIFICATION OF THE CODE BELOW WILL RESULT IN A MARK OF 0!                   :
