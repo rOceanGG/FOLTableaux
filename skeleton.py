@@ -88,6 +88,9 @@ def parse(fmla):
     def isVariable(formula):
         return formula in ['x','y','z','w']
     
+    def isIntroVar(formula):
+        return formula in ['a','b','c','d','e','f','g','h','i','j']
+    
     def isPredicate(formula):
         return formula in ['P','Q','R','S']
     
@@ -98,8 +101,8 @@ def parse(fmla):
 
     def isFOLFormula(formula):
         if (len(formula) == 6 and isPredicate(formula[0]) and 
-        formula[1] == '(' and isVariable(formula[2]) and formula[3] == ','
-        and isVariable(formula[4]) and formula[5] == ')'):
+        formula[1] == '(' and (isVariable(formula[2]) or isIntroVar(formula[2])) and formula[3] == ','
+        and (isVariable(formula[4]) or isIntroVar(formula[4])) and formula[5] == ')'):
             return 1 # an atom
         elif len(formula) > 2 and formula[0] == NOT and isFOLFormula(formula[1:]) != 0:
             return 2 # a negation of a first order logic formula
@@ -134,6 +137,7 @@ def theory(fmla):#initialise a theory with a single formula in it
     tabRoot = TreeNode(fmla, [], set([]))
     leafProps = []
     queue = [tabRoot]
+    newVars = []
 
     if FOLPROP > 5:
         while queue:
@@ -163,7 +167,7 @@ def theory(fmla):#initialise a theory with a single formula in it
                 if curNode.stmt[:2] == '~~':
                     while curNode.stmt[:2] == '~~':
                         curNode.stmt = curNode.stmt[2:]
-                    queue.insert(0, TreeNode(curNode.stmt, curNode.children, curNode.values))
+                    queue.insert(0, curNode)
                 else:
                     negatedLeft, negatedSym, negatedRight = breakToParts(curNode.stmt[1:])
                     if negatedSym == OR:
@@ -183,31 +187,81 @@ def theory(fmla):#initialise a theory with a single formula in it
                     
                     queue.append(leftSideNode)
                     queue.append(rightSideNode)
-                         
+        else:
+            while queue:
+                curNode = queue.pop(0)
+                fmlaType = parse(curNode.stmt)
+
+                if fmlaType == 1 or (fmlaType == 2 and len(curNode.stmt) == 7):
+                    curNode.addProp(curNode.stmt)
+                    if not curNode.children:
+                        leafProps.append(curNode.values)
+                
+                elif fmlaType == 5:
+                    left,sym,right = breakToParts(curNode.stmt)
+                    leftSideNode = TreeNode(left, [], curNode.values)
+                    rightSideNode = TreeNode(right, [], curNode.values)
+                    if sym == AND: 
+                        curNode.addChildrenToLeaf([leftSideNode])
+                        curNode.addChildrenToLeaf([rightSideNode])
+                    elif sym == OR:
+                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    elif sym == IMPLIES:
+                        curNode.addChildrenToLeaf([TreeNode('~' + left, [], curNode.values), rightSideNode])
+                    queue.append(leftSideNode)
+                    queue.append(rightSideNode)
+                elif curNode.stmt[:2] == '~~':
+                    while curNode.stmt[:2] == '~~':
+                        curNode.stmt = curNode.stmt[2:]
+                    queue.insert(0, curNode)
+                elif fmlaType == 2 and parse(curNode.stmt[1:]) == 5:
+                    negatedLeft, negatedSym, negatedRight = breakToParts(curNode.stmt[1:])
+                    if negatedSym == OR:
+                        leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
+                        rightSideNode = TreeNode('~' + negatedRight, [], curNode.values)
+                        curNode.addChildrenToLeaf([leftSideNode])
+                        curNode.addChildrenToLeaf([rightSideNode])
+                    elif negatedSym == AND:
+                        leftSideNode = TreeNode('~' + negatedLeft, [], curNode.values)
+                        rightSideNode = TreeNode('~' + negatedRight, [], curNode.values)
+                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    elif negatedSym == IMPLIES:
+                        leftSideNode = TreeNode(negatedLeft, [], curNode.values)
+                        rightSideNode = TreeNode('~'+negatedRight, [], curNode.values)
+                        curNode.addChildrenToLeaf([leftSideNode])
+                        curNode.addChildrenToLeaf([rightSideNode])
+                    
+                    queue.append(leftSideNode)
+                    queue.append(rightSideNode)
+                elif fmlaType == 4:
+                    if len(newVars) == 10:
+                        return ['Return 2']
+                    
+                    #Replace all following occurences of the next variable with next new Variable
+
+                    
+
     return leafProps
         
     
 
 #check for satisfiability
 def sat(tableau):
-
+    #output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
     def containsContradiction(arr):
         for prop in arr:
             if '~' + prop in arr or (len(prop) == 2 and prop[1] in arr):
                 return True
         
         return False
-#output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
     pathways = theory(tableau)
-
+    if pathways == ['Return 2']:
+        return 2
     for path in pathways:
         if not containsContradiction(path):
             return 1
     
     return 0
-
-sat("~(p=>(q=>p))")
-
 #------------------------------------------------------------------------------------------------------------------------------:
 #                   DO NOT MODIFY THE CODE BELOW. MODIFICATION OF THE CODE BELOW WILL RESULT IN A MARK OF 0!                   :
 #------------------------------------------------------------------------------------------------------------------------------:
