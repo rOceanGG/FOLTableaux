@@ -8,10 +8,17 @@ FOL_INDICES = [1,2,3,4,5]
 PROPOSITIONAL_INDICES = [6,7,8]
 
 class TreeNode():
-    def __init__(self, stmt, children, values):
+    def __init__(self, stmt, children=None, values=None):
         self.stmt = stmt
-        self.children = children
-        self.values = values
+        self.children = children if children else []
+        self.values = values if values else []
+
+    def addValue(self, value):
+        if value not in self.values:
+            self.values.append(value)
+        
+        for c in self.children:
+            c.addValue(value)
 
     def addChildrenToLeaf(self, newChildren):
         if len(self.children) == 0:
@@ -20,10 +27,6 @@ class TreeNode():
             for c in self.children:
                 c.addChildrenToLeaf(newChildren)
     
-    def addProp(self, prop):
-        self.values.add(prop)
-        for c in self.children:
-            c.addProp(prop)
 
 
 # Break the formula into LHS, Binary Connective, and RHS
@@ -134,7 +137,7 @@ def parse(fmla):
 def theory(fmla):#initialise a theory with a single formula in it
     FOLPROP = parse(fmla)
     if FOLPROP == 0: return []
-    tabRoot = TreeNode(fmla, [], set([]))
+    tabRoot = TreeNode(fmla, [], [])
     leafProps = []
     queue = [tabRoot]
     newVars = []
@@ -146,7 +149,7 @@ def theory(fmla):#initialise a theory with a single formula in it
             fmlaType = parse(curNode.stmt)
 
             if fmlaType == 6 or (fmlaType == 7 and len(curNode.stmt) == 2):
-                curNode.addProp(curNode.stmt)
+                curNode.addValue(curNode.stmt)
                 if not curNode.children:
                     leafProps.append(curNode.values)
 
@@ -188,94 +191,90 @@ def theory(fmla):#initialise a theory with a single formula in it
                     
                     queue.append(leftSideNode)
                     queue.append(rightSideNode)
-        else:
-            while queue:
-                curNode = queue.pop(0)
-                fmlaType = parse(curNode.stmt)
+    else:
+        while queue:
+            curNode = queue.pop(0)
+            fmlaType = parse(curNode.stmt)
 
-                if fmlaType == 1 or (fmlaType == 2 and len(curNode.stmt) == 7):
-                    curNode.addProp(curNode.stmt)
-                    if not curNode.children:
-                        leafProps.append(curNode.values)
+            if fmlaType == 1 or (fmlaType == 2 and len(curNode.stmt) == 7):
+                curNode.addValue(curNode.stmt)
+                if not curNode.children:
+                    leafProps.append(curNode.values)
                 
-                elif fmlaType == 5:
-                    left,sym,right = breakToParts(curNode.stmt)
-                    leftSideNode = TreeNode(left, [], curNode.values)
-                    rightSideNode = TreeNode(right, [], curNode.values)
-                    if sym == AND: 
-                        curNode.addChildrenToLeaf([leftSideNode])
-                        curNode.addChildrenToLeaf([rightSideNode])
-                    elif sym == OR:
-                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
-                    elif sym == IMPLIES:
-                        curNode.addChildrenToLeaf([TreeNode(NOT + left, [], curNode.values), rightSideNode])
-                    queue.append(leftSideNode)
-                    queue.append(rightSideNode)
-                elif curNode.stmt[:2] == NOT + NOT:
-                    while curNode.stmt[:2] == NOT + NOT:
-                        curNode.stmt = curNode.stmt[2:]
-                    queue.insert(0, curNode)
-                elif fmlaType == 2 and parse(curNode.stmt[1:]) == 5:
-                    negatedLeft, negatedSym, negatedRight = breakToParts(curNode.stmt[1:])
-                    if negatedSym == OR:
-                        leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
-                        rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf([leftSideNode])
-                        curNode.addChildrenToLeaf([rightSideNode])
-                    elif negatedSym == AND:
-                        leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
-                        rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
-                    elif negatedSym == IMPLIES:
-                        leftSideNode = TreeNode(negatedLeft, [], curNode.values)
-                        rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf([leftSideNode])
-                        curNode.addChildrenToLeaf([rightSideNode])
+            elif fmlaType == 5:
+                left,sym,right = breakToParts(curNode.stmt)
+                leftSideNode = TreeNode(left, [], curNode.values)
+                rightSideNode = TreeNode(right, [], curNode.values)
+                if sym == AND: 
+                    curNode.addChildrenToLeaf([leftSideNode])
+                    curNode.addChildrenToLeaf([rightSideNode])
+                elif sym == OR:
+                    curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                elif sym == IMPLIES:
+                    curNode.addChildrenToLeaf([TreeNode(NOT + left, [], curNode.values), rightSideNode])
+                queue.append(leftSideNode)
+                queue.append(rightSideNode)
+            elif curNode.stmt[:2] == NOT + NOT:
+                while curNode.stmt[:2] == NOT + NOT:
+                    curNode.stmt = curNode.stmt[2:]
+                queue.insert(0, curNode)
+            elif fmlaType == 2 and parse(curNode.stmt[1:]) == 5:
+                negatedLeft, negatedSym, negatedRight = breakToParts(curNode.stmt[1:])
+                if negatedSym == OR:
+                    leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
+                    rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
+                    curNode.addChildrenToLeaf([leftSideNode])
+                    curNode.addChildrenToLeaf([rightSideNode])
+                elif negatedSym == AND:
+                    leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
+                    rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
+                    curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                elif negatedSym == IMPLIES:
+                    leftSideNode = TreeNode(negatedLeft, [], curNode.values)
+                    rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
+                    curNode.addChildrenToLeaf([leftSideNode])
+                    curNode.addChildrenToLeaf([rightSideNode])
                     
-                    queue.append(leftSideNode)
-                    queue.append(rightSideNode)
+                queue.append(leftSideNode)
+                queue.append(rightSideNode)
                 #Delta expansions
-                elif fmlaType == 4 or fmlaType == 2 and parse(curNode.stmt[1:]) == 3:
-                    if len(newVars) == 10:
-                        leafProps.append(['Return 2'])
+            elif fmlaType == 4 or fmlaType == 2 and parse(curNode.stmt[1:]) == 3:
+                if len(newVars) == 10:
+                    leafProps.append(['Return 2'])
                     
                     # Select what the new variable is going to be
-                    if len(newVars) == 0:
-                        newVar = 'a'
-                    else:
-                        newVar = chr(ord(newVars[-1]) + 1)
+                if len(newVars) == 0:
+                    newVar = 'a'
+                else:
+                    newVar = chr(ord(newVars[-1]) + 1)
 
-                    newVars.append(newVar)
+                newVars.append(newVar)
 
                     #If existential quantifier, select all of statement aside from the quantifier and quantified variable
-                    if fmlaType == 4:
-                        quantified = curNode.stmt[1]
-                        newStmt = curNode.stmt.replace(quantified, newVar)[2:]
+                if fmlaType == 4:
+                    quantified = curNode.stmt[1]
+                    newStmt = curNode.stmt.replace(quantified, newVar)[2:]
                     
                     #Otherwise take all of statement aside from the negation, quantifier and quantified variable
-                    else:
-                        quantified = curNode.stmt[2]
-                        newStmt = NOT + curNode.stmt.replace(quantified, newVar)[3:]
-                    
-                    newNode = TreeNode(newStmt, curNode.children, curNode.values)
-                    queue.insert(0, newNode)
-                    #Put the new variable in all mentioned gamma statements
-                    for gamma in gammaStmts:
-                        if gamma[0] == NOT:
-                            newStmt = gamma.replace(gamma[2], newVar)[3:]
-                        else:
-                            newStmt = gamma.replace(gamma[1], newVar)[2:]
-                        
-                        newNode = TreeNode(newStmt, [], curNode.values)
-                        curNode.addChildrenToLeaf(newNode)
-                        queue.append(newNode)
-                #Gamma expansions
                 else:
-                    gammaStmts.append(curNode.stmt)
-
-                    #Handle differently depending on negated existential or normal universal
-                    if len(newVars) == 0:
-                        newVar = 'a'
+                    quantified = curNode.stmt[2]
+                    newStmt = NOT + curNode.stmt.replace(quantified, newVar)[3:]
+                    
+                newNode = TreeNode(newStmt, curNode.children, curNode.values)
+                queue.insert(0, newNode)
+                #Put the new variable in all mentioned gamma statements
+                for gamma in gammaStmts:
+                    if gamma[0] == NOT:
+                        newStmt = gamma.replace(gamma[2], newVar)[3:]
+                    else:
+                        newStmt = gamma.replace(gamma[1], newVar)[2:]
+                        
+                    newNode = TreeNode(newStmt, [], curNode.values)
+                    curNode.addChildrenToLeaf(newNode)
+                    queue.append(newNode)
+            #Gamma expansions
+            else:
+                gammaStmts.append(curNode.stmt)
 
 
                     
@@ -301,6 +300,8 @@ def sat(tableau):
             return 1
     
     return 0
+
+sat("~Ax(P(x,x)/\~P(x,x))")
 #------------------------------------------------------------------------------------------------------------------------------:
 #                   DO NOT MODIFY THE CODE BELOW. MODIFICATION OF THE CODE BELOW WILL RESULT IN A MARK OF 0!                   :
 #------------------------------------------------------------------------------------------------------------------------------:
