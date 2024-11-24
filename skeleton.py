@@ -20,12 +20,6 @@ class TreeNode():
         for c in self.children:
             c.addValue(value)
 
-    def addChildrenToLeaf(self, newChildren):
-        if len(self.children) == 0:
-            self.children = newChildren
-        else:
-            for c in self.children:
-                c.addChildrenToLeaf(newChildren)
     
 
 
@@ -143,6 +137,15 @@ def theory(fmla):#initialise a theory with a single formula in it
     newVars = []
     gammaStmts = []
 
+    def addChildrenToLeaf(node, newChildren):
+        if len(node.children) == 0:
+            node.children = [TreeNode(c.stmt, [], list(node.values)) for c in newChildren]
+            for child in node.children:
+                queue.append(child)
+        else:
+            for c in node.children:
+                addChildrenToLeaf(c, newChildren)
+
     if FOLPROP > 5:
         while queue:
             curNode = queue.pop(0)
@@ -155,18 +158,16 @@ def theory(fmla):#initialise a theory with a single formula in it
 
             elif fmlaType == 8:
                 left,sym,right = breakToParts(curNode.stmt)
-                leftSideNode = TreeNode(left, [], curNode.values)
-                rightSideNode = TreeNode(right, [], curNode.values)
+                leftSideNode = TreeNode(left, [], list(curNode.values))
+                rightSideNode = TreeNode(right, [], list(curNode.values))
                 if sym == AND: 
-                    curNode.addChildrenToLeaf([leftSideNode])
-                    curNode.addChildrenToLeaf([rightSideNode])
+                    addChildrenToLeaf(curNode,[leftSideNode])
+                    addChildrenToLeaf(curNode,[rightSideNode])
                 elif sym == OR:
-                    curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    addChildrenToLeaf(curNode,[leftSideNode, rightSideNode])
                 elif sym == IMPLIES:
-                    curNode.addChildrenToLeaf([TreeNode(NOT + left, [], curNode.values), rightSideNode])
+                    addChildrenToLeaf(curNode,[TreeNode(NOT + left, [], list(curNode.values)), rightSideNode])
                 
-                queue.append(leftSideNode)
-                queue.append(rightSideNode)
             else:
                 if curNode.stmt[:2] == NOT + NOT:
                     while curNode.stmt[:2] == NOT + NOT:
@@ -175,22 +176,20 @@ def theory(fmla):#initialise a theory with a single formula in it
                 else:
                     negatedLeft, negatedSym, negatedRight = breakToParts(curNode.stmt[1:])
                     if negatedSym == OR:
-                        leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
-                        rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf([leftSideNode])
-                        curNode.addChildrenToLeaf([rightSideNode])
+                        leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values))
+                        rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values))
+                        addChildrenToLeaf(curNode,[leftSideNode])
+                        addChildrenToLeaf(curNode,[rightSideNode])
                     elif negatedSym == AND:
-                        leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
-                        rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                        leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values))
+                        rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values))
+                        addChildrenToLeaf(curNode,[leftSideNode, rightSideNode])
                     elif negatedSym == IMPLIES:
-                        leftSideNode = TreeNode(negatedLeft, [], curNode.values)
-                        rightSideNode = TreeNode(NOT+negatedRight, [], curNode.values)
-                        curNode.addChildrenToLeaf([leftSideNode])
-                        curNode.addChildrenToLeaf([rightSideNode])
+                        leftSideNode = TreeNode(negatedLeft, [], list(curNode.values))
+                        rightSideNode = TreeNode(NOT+negatedRight, [], list(curNode.values))
+                        addChildrenToLeaf(curNode,[leftSideNode])
+                        addChildrenToLeaf(curNode,[rightSideNode])
                     
-                    queue.append(leftSideNode)
-                    queue.append(rightSideNode)
     else:
         while queue:
             curNode = queue.pop(0)
@@ -203,17 +202,15 @@ def theory(fmla):#initialise a theory with a single formula in it
                 
             elif fmlaType == 5:
                 left,sym,right = breakToParts(curNode.stmt)
-                leftSideNode = TreeNode(left, [], curNode.values)
-                rightSideNode = TreeNode(right, [], curNode.values)
+                leftSideNode = TreeNode(left, [], list(curNode.values))
+                rightSideNode = TreeNode(right, [], list(curNode.values))
                 if sym == AND: 
-                    curNode.addChildrenToLeaf([leftSideNode])
-                    curNode.addChildrenToLeaf([rightSideNode])
+                    addChildrenToLeaf(curNode,[leftSideNode])
+                    addChildrenToLeaf(curNode,[rightSideNode])
                 elif sym == OR:
-                    curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    addChildrenToLeaf(curNode,[leftSideNode, rightSideNode])
                 elif sym == IMPLIES:
-                    curNode.addChildrenToLeaf([TreeNode(NOT + left, [], curNode.values), rightSideNode])
-                queue.append(leftSideNode)
-                queue.append(rightSideNode)
+                    addChildrenToLeaf(curNode,[TreeNode(NOT + left, [], list(curNode.values)), rightSideNode])
             elif curNode.stmt[:2] == NOT + NOT:
                 while curNode.stmt[:2] == NOT + NOT:
                     curNode.stmt = curNode.stmt[2:]
@@ -221,22 +218,20 @@ def theory(fmla):#initialise a theory with a single formula in it
             elif fmlaType == 2 and parse(curNode.stmt[1:]) == 5:
                 negatedLeft, negatedSym, negatedRight = breakToParts(curNode.stmt[1:])
                 if negatedSym == OR:
-                    leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
-                    rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                    curNode.addChildrenToLeaf([leftSideNode])
-                    curNode.addChildrenToLeaf([rightSideNode])
+                    leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values))
+                    rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values))
+                    addChildrenToLeaf(curNode,[leftSideNode])
+                    addChildrenToLeaf(curNode,[rightSideNode])
                 elif negatedSym == AND:
-                    leftSideNode = TreeNode(NOT + negatedLeft, [], curNode.values)
-                    rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                    curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values))
+                    rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values))
+                    addChildrenToLeaf(curNode,[leftSideNode, rightSideNode])
                 elif negatedSym == IMPLIES:
-                    leftSideNode = TreeNode(negatedLeft, [], curNode.values)
-                    rightSideNode = TreeNode(NOT + negatedRight, [], curNode.values)
-                    curNode.addChildrenToLeaf([leftSideNode])
-                    curNode.addChildrenToLeaf([rightSideNode])
+                    leftSideNode = TreeNode(negatedLeft, [], list(curNode.values))
+                    rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values))
+                    addChildrenToLeaf(curNode,[leftSideNode])
+                    addChildrenToLeaf(curNode,[rightSideNode])
                     
-                queue.append(leftSideNode)
-                queue.append(rightSideNode)
                 #Delta expansions
             elif fmlaType == 4 or fmlaType == 2 and parse(curNode.stmt[1:]) == 3:
                 if len(newVars) == 10:
@@ -259,8 +254,8 @@ def theory(fmla):#initialise a theory with a single formula in it
                 else:
                     quantified = curNode.stmt[2]
                     newStmt = NOT + curNode.stmt.replace(quantified, newVar)[3:]
-                    
-                newNode = TreeNode(newStmt, curNode.children, curNode.values)
+                
+                newNode = TreeNode(newStmt, curNode.children, list(curNode.values))
                 queue.insert(0, newNode)
                 #Put the new variable in all mentioned gamma statements
                 for gamma in gammaStmts:
@@ -269,8 +264,8 @@ def theory(fmla):#initialise a theory with a single formula in it
                     else:
                         newStmt = gamma.replace(gamma[1], newVar)[2:]
                         
-                    newNode = TreeNode(newStmt, [], curNode.values)
-                    curNode.addChildrenToLeaf(newNode)
+                    newNode = TreeNode(newStmt, [], list(curNode.values))
+                    addChildrenToLeaf(curNode,newNode)
                     queue.append(newNode)
             #Gamma expansions
             else:
@@ -286,22 +281,21 @@ def theory(fmla):#initialise a theory with a single formula in it
 #check for satisfiability
 def sat(tableau):
     #output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
+    pathways = tableau[0]
     def containsContradiction(arr):
         for prop in arr:
             if NOT + prop in arr or (len(prop) == 2 and prop[1] in arr):
                 return True
         
         return False
-    pathways = theory(tableau)
-    if pathways == ['Return 2']:
-        return 2
     for path in pathways:
         if not containsContradiction(path):
             return 1
     
     return 0
 
-sat("~Ax(P(x,x)/\~P(x,x))")
+#TODO: Stop values being added to the cousin nodes
+
 #------------------------------------------------------------------------------------------------------------------------------:
 #                   DO NOT MODIFY THE CODE BELOW. MODIFICATION OF THE CODE BELOW WILL RESULT IN A MARK OF 0!                   :
 #------------------------------------------------------------------------------------------------------------------------------:
