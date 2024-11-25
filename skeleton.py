@@ -265,11 +265,26 @@ def theory(fmla):#initialise a theory with a single formula in it
                         newStmt = gamma.replace(gamma[1], newVar)[2:]
                         
                     newNode = TreeNode(newStmt, [], list(curNode.values))
-                    addChildrenToLeaf(curNode,newNode)
+                    addChildrenToLeaf(curNode,[newNode])
                     queue.append(newNode)
             #Gamma expansions
             else:
                 gammaStmts.append(curNode.stmt)
+                if curNode.stmt[0] == NOT:
+                    quantified = curNode.stmt[2]
+                else:
+                    quantified = curNode.stmt[1]
+                
+                if len(newVars) == 0:
+                    newVars.append('a')
+                for v in newVars:
+                    if curNode.stmt[0] == NOT:
+                        newStmt = NOT + curNode.stmt.replace(quantified, v)[3:]
+                    else:
+                        newStmt = curNode.stmt.replace(quantified, v)[2:]
+                    
+                    newNode = TreeNode(newStmt, [], list(curNode.values))
+                    addChildrenToLeaf(curNode,[newNode])
 
 
                     
@@ -292,7 +307,7 @@ def sat(tableau):
         if not containsContradiction(path):
             return 1
     
-    return 0
+    return 0 if len(pathways) != 0 else 1
 
 #TODO: Stop values being added to the cousin nodes
 
