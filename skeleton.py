@@ -111,7 +111,7 @@ def parse(fmla):
             return 1 # an atom
         elif len(formula) > 2 and formula[0] == NOT and isFOLFormula(formula[1:]) != 0:
             return 2 # a negation of a first order logic formula
-        elif len(formula) > 3 and isQuantifier(formula[0]) and isVariable(formula[1]) and isFOLFormula(formula[2:]) != 0:
+        elif len(formula) > 3 and isQuantifier(formula[0]) and (isVariable(formula[1]) or isIntroVar(formula[1])) and isFOLFormula(formula[2:]) != 0:
             return 3 if formula[0] == 'A' else 4
         # a universally quantified first order logic formula, an existentially quantified first order logic formula
         else:
@@ -153,16 +153,7 @@ def theory(fmla):#initialise a theory with a single formula in it
 
     def addChildrenToLeaf(node, newChildren):
         if len(node.children) == 0:
-            node.children = [TreeNode(c.stmt, [], list(node.values)) for c in newChildren]
-            for child in node.children:
-                queue.append(child)
-        else:
-            for c in node.children:
-                addChildrenToLeaf(c, newChildren)
-
-    def addChildrenToLeaf(node, newChildren):
-        if len(node.children) == 0:
-            node.children = [TreeNode(c.stmt, [], list(node.values)) for c in newChildren]
+            node.children = [TreeNode(c.stmt, [], list(node.values), list(node.gammas)) for c in newChildren]
             for child in node.children:
                 queue.append(child)
         else:
@@ -189,7 +180,7 @@ def theory(fmla):#initialise a theory with a single formula in it
                 elif sym == OR:
                     addChildrenToLeaf(curNode,[leftSideNode, rightSideNode])
                 elif sym == IMPLIES:
-                    curNode.addChildrenToLeaf([TreeNode(NOT + left, [], list(curNode.values), list(curNode.gammas)), rightSideNode])
+                    addChildrenToLeaf(curNode, [TreeNode(NOT + left, [], list(curNode.values), list(curNode.gammas)), rightSideNode])
                 
             else:
                 if curNode.stmt[:2] == NOT + NOT:
@@ -201,17 +192,17 @@ def theory(fmla):#initialise a theory with a single formula in it
                     if negatedSym == OR:
                         leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values), list(curNode.gammas))
                         rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values), list(curNode.gammas))
-                        curNode.addChildrenToLeaf([leftSideNode])
-                        curNode.addChildrenToLeaf([rightSideNode])
+                        addChildrenToLeaf(curNode, [leftSideNode])
+                        addChildrenToLeaf(curNode, [rightSideNode])
                     elif negatedSym == AND:
                         leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values), list(curNode.gammas))
                         rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values), list(curNode.gammas))
-                        curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                        addChildrenToLeaf(curNode, [leftSideNode, rightSideNode])
                     elif negatedSym == IMPLIES:
                         leftSideNode = TreeNode(negatedLeft, [], list(curNode.values), list(curNode.gammas))
                         rightSideNode = TreeNode(NOT+negatedRight, [], list(curNode.values), list(curNode.gammas))
-                        curNode.addChildrenToLeaf([leftSideNode])
-                        curNode.addChildrenToLeaf([rightSideNode])
+                        addChildrenToLeaf(curNode, [leftSideNode])
+                        addChildrenToLeaf(curNode, [rightSideNode])
                     
     else:
         while queue:
@@ -233,9 +224,7 @@ def theory(fmla):#initialise a theory with a single formula in it
                 elif sym == OR:
                     addChildrenToLeaf(curNode,[leftSideNode, rightSideNode])
                 elif sym == IMPLIES:
-                    curNode.addChildrenToLeaf([TreeNode(NOT + left, [], list(curNode.values), list(curNode.gammas)), rightSideNode])
-                queue.append(leftSideNode)
-                queue.append(rightSideNode)
+                    addChildrenToLeaf(curNode, [TreeNode(NOT + left, [], list(curNode.values), list(curNode.gammas)), rightSideNode])
             elif curNode.stmt[:2] == NOT + NOT:
                 while curNode.stmt[:2] == NOT + NOT:
                     curNode.stmt = curNode.stmt[2:]
@@ -245,22 +234,19 @@ def theory(fmla):#initialise a theory with a single formula in it
                 if negatedSym == OR:
                     leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values), list(curNode.gammas))
                     rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values), list(curNode.gammas))
-                    curNode.addChildrenToLeaf([leftSideNode])
-                    curNode.addChildrenToLeaf([rightSideNode])
+                    addChildrenToLeaf(curNode, [leftSideNode])
+                    addChildrenToLeaf(curNode, [rightSideNode])
                 elif negatedSym == AND:
                     leftSideNode = TreeNode(NOT + negatedLeft, [], list(curNode.values), list(curNode.gammas))
                     rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values), list(curNode.gammas))
-                    curNode.addChildrenToLeaf([leftSideNode, rightSideNode])
+                    addChildrenToLeaf(curNode, [leftSideNode, rightSideNode])
                 elif negatedSym == IMPLIES:
                     leftSideNode = TreeNode(negatedLeft, [], list(curNode.values), list(curNode.gammas))
                     rightSideNode = TreeNode(NOT + negatedRight, [], list(curNode.values), list(curNode.gammas))
-                    curNode.addChildrenToLeaf([leftSideNode])
-                    curNode.addChildrenToLeaf([rightSideNode])
-                    
-                queue.append(leftSideNode)
-                queue.append(rightSideNode)
+                    addChildrenToLeaf(curNode, [leftSideNode])
+                    addChildrenToLeaf(curNode, [rightSideNode])
             #Delta expansions
-            elif fmlaType == 4 or fmlaType == 2 and parse(curNode.stmt[1:]) == 3:
+            elif fmlaType == 4 or (fmlaType == 2 and parse(curNode.stmt[1:]) == 3):
                 if len(newVars) == 10:
                     for c in curNode.children:
                         removeFromQueue(c)
@@ -295,8 +281,7 @@ def theory(fmla):#initialise a theory with a single formula in it
                         newStmt = gamma.replace(gamma[1], newVar)[2:]
                         
                     newNode = TreeNode(newStmt, [], list(curNode.values), list(curNode.gammas))
-                    curNode.addChildrenToLeaf([newNode])
-                    queue.append(newNode)
+                    addChildrenToLeaf(curNode, [newNode])
             #Gamma expansions
             else:
                 curNode.addGamma(curNode.stmt)
@@ -315,8 +300,7 @@ def theory(fmla):#initialise a theory with a single formula in it
                         newStmt = curNode.stmt.replace(quantified, v)[2:]
                     
                     newNode = TreeNode(newStmt, [], list(curNode.values), list(curNode.gammas))
-                    curNode.addChildrenToLeaf([newNode])
-                    queue.append(newNode)
+                    addChildrenToLeaf(curNode, [newNode])
 
 
                     
@@ -329,12 +313,24 @@ def theory(fmla):#initialise a theory with a single formula in it
 def sat(tableau):
     #output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
     pathways = tableau[0]
+
+    def allUnknown(arr):
+        for a in arr:
+            for prop in a:
+                if prop != 'Return 2':
+                    return False
+        
+        return True
+
     def containsContradiction(arr):
         for prop in arr:
             if NOT + prop in arr or (len(prop) == 2 and prop[1] in arr):
                 return True
         
         return False
+    
+    if allUnknown(pathways):
+        return 2
     for path in pathways:
         if not containsContradiction(path):
             return 1
