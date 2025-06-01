@@ -1,2 +1,1 @@
-Current Objective: Create a python program that will take in FOL statements and return truth values
-Next Objective: Implement in Java and possibly add multithreading to experiment
+Given either a First Order Logic statement or a Propositional Logic statement, this program uses a tree data structure to determine if the statement is satisfiable and hence, can determine if a statement is valid (if we can find ¬P to not be satisfiable, then we have found P to be valid). The only current limitation is that I introduce a maximum of 10 new variables. However, this limit can be changed to a higher value, should it be needed.
